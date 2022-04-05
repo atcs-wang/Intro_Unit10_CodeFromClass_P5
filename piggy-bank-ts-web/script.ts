@@ -1,11 +1,6 @@
 const balanceElm = document.querySelector(".balance") as HTMLElement;
 const balanceAmountElm = document.querySelector("#balance-amount") as HTMLElement;
 
-const pennyElm = document.querySelector("#penny") as HTMLElement;
-const nickelElm = document.querySelector("#nickel") as HTMLElement;
-const dimeElm = document.querySelector("#dime") as HTMLElement;
-const quarterElm = document.querySelector("#quarter") as HTMLElement;
-
 const coinAddSoundElm = document.querySelector("audio.coin-add") as HTMLAudioElement;
 const coinRemoveSoundElm = document.querySelector("audio.coin-remove") as HTMLAudioElement;
 
@@ -21,73 +16,47 @@ function updateBalance(amount: number, remove: boolean) : void {
     soundElm.play();
 }
 
-pennyElm.onclick = function (event : MouseEvent) {
-    updateBalance(0.01, event.shiftKey);
-    addToHistory("p");
+function handleButtonClick(event : MouseEvent) {
+    let clickedElm = event.currentTarget as HTMLElement;
+    updateBalance(Number(clickedElm.dataset.amount), event.shiftKey);
+    addToHistory(clickedElm, event.shiftKey);
 };
-nickelElm.addEventListener("click", function (event : MouseEvent) {
-    updateBalance(0.05, event.shiftKey);
-    addToHistory("n");
-}); 
-dimeElm.onclick = (event : MouseEvent) => {
-    updateBalance(0.10, event.shiftKey);
-    addToHistory("d");
-};
-quarterElm.addEventListener("click", (event : MouseEvent) => {
-    updateBalance(0.25, event.shiftKey);
-    addToHistory("q");
+
+document.querySelectorAll<HTMLElement>(".coin").forEach(function(elm) {
+    elm.addEventListener("click", handleButtonClick);
 });
 
 document.addEventListener("keydown", (event : KeyboardEvent) => {
     if (event.repeat)
         return;
+    // Looking for a .coin element that has a data-letter that matches the keypress
+    let elm = document.querySelector(`.coin[data-letter='${event.key.toLowerCase()}']`) as HTMLElement | null;
+    if (!elm) // elm === null
+        return ;
+    elm.classList.add("keypress");
 
-    let coinValue : number = 0;
-    switch (event.key) {
-        case "p": case "P":
-            coinValue = 0.01;
-            pennyElm.classList.add("keypress");
-        break;
-        case "n": case "N":
-            coinValue = 0.05;
-            nickelElm.classList.add("keypress");
-        break;
-        case "d": case "D":
-            coinValue = 0.10;
-            dimeElm.classList.add("keypress");
-        break;
-        case "q": case "Q":
-            coinValue = 0.25;
-            quarterElm.classList.add("keypress");
-        break;
-        default:
-            return;
-    } 
+    let coinValue : number = Number(elm.dataset.amount);
     updateBalance(coinValue, event.shiftKey);
-    addToHistory(event.key);    
+    addToHistory(elm, event.shiftKey);    
 });
 
 document.addEventListener("keyup", (event : KeyboardEvent) => {
-    switch (event.key) {
-        case "p": case "P":
-            pennyElm.classList.remove("keypress");
-        break;
-        case "n": case "N":
-            nickelElm.classList.remove("keypress");
-        break;
-        case "d": case "D":
-            dimeElm.classList.remove("keypress");
-        break;
-        case "q": case "Q":
-            quarterElm.classList.remove("keypress");
-        break;
-        default:
-            return;
-    } 
+    // Looking for a .coin element that has a data-letter that matches the keypress
+    let elm = document.querySelector(`.coin[data-letter='${event.key.toLowerCase()}']`) as HTMLElement | null;
+    if (!elm) // elm === null
+        return ;
+    elm.classList.remove("keypress");
 });
 
-function addToHistory(coin : string) {
+function addToHistory(coinElm : HTMLElement, wasRemoved : boolean) {
     let listItem : HTMLLIElement = document.createElement("li");
-    listItem.textContent = coin;
+    listItem.textContent = coinElm.dataset.letter as string;
+    if (wasRemoved)
+        listItem.classList.add("negative");
     historyElm.appendChild(listItem);
+
+    listItem.addEventListener("click", function (event : MouseEvent) {
+        listItem.remove();
+        updateBalance(Number(coinElm.dataset.amount), !wasRemoved);  
+    });
 }
